@@ -1,0 +1,122 @@
+#!/usr/bin/env node
+
+/**
+ * httpserver start
+ */
+
+var app = require('../app');
+var debug = require('debug')('test:server');
+var http = require('http');
+var fs = require('fs');
+var url = require('url');
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+CASTER_LIST = {
+               "user_name1": null,
+               "user_name2": null,
+               "user_name3": null,
+               "user_name4": null,
+               "user_name5": null,
+               "user_name6": null,
+               "user_name7": null
+               };
+var URL = 'http://api.twitcasting.tv/api/livestatus?type=json&user=';
+var URL_PRIFIX = "/api/livestatus?type=json&user=";
+
+CASTER_STATUS = null;
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+var log = console.log;
+
+function normalizePort(val) {
+  var port = parseInt(val, 100);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+var updateCaster = function() {
+for(var caster in CASTER_LIST){
+  http.get(URL+caster, (res) => {
+    var body = '';
+    var path = res.req.path.substr( URL_PRIFIX.length ) ;
+
+    res.setEncoding('utf8');
+    res.on('data', (chunk) => {
+        body += chunk;
+    });
+    res.on('end', (res) => {
+        var json = JSON.parse(body);
+        CASTER_LIST[path] = json;
+    });
+  }).on('error', (e) => {
+    console.log(e.message); //ƒGƒ‰[
+  });
+}
+};
+
+updateCaster();
+setInterval(updateCaster, 30000);
